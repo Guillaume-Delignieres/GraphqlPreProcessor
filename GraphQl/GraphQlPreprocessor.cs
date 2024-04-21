@@ -84,48 +84,70 @@ namespace graphql_preprocessor.GraphQl
             }
 
             string operation = grapQlfileContent.Substring(operationStartIndex, operationEndIndex - operationStartIndex + 1);
+            
+            // Find the fragment required for that operation
+            var fragmentsRequiredMatches = Regex.Matches(operation, @"\.\.\.(\w+)");
+            var fragmentsRequired = fragmentsRequiredMatches.Select(matche => matche.Groups[1].Value);
 
-            // Find all fragment definitions
-            var fragmentMatches = Regex.Matches(grapQlfileContent, @"\bfragment\s+(\w+)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-            // Include all fragments used by the operation
-            foreach (Match fragmentMatch in fragmentMatches)
+            // find the required fragement in the file
+            foreach (var fragmentRequired in fragmentsRequired)
             {
-                string fragmentName = fragmentMatch.Groups[1].Value;
-                if (operation.Contains(fragmentName))
+                var fragmentMatch = Regex.Match(grapQlfileContent, $@"\bfragment\s+{fragmentRequired}\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                if (!fragmentMatch.Success)
+                    throw new InvalidOperationException(
+                        $"Cannot find fragment {fragmentRequired} for operation {operationName}");
+                var fragment = ExtractFragment(grapQlfileContent, fragmentMatch);
+                operation += "\n\n" + fragment;
+            }
+            
+            // // Find all fragment definitions
+            // var fragmentMatches = Regex.Matches(grapQlfileContent, @"\bfragment\s+(\w+)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            //
+            // // Include all fragments used by the operation
+            // foreach (Match fragmentMatch in fragmentMatches)
+            // {
+            //     string fragmentName = $"{fragmentMatch.Groups[1].Value}";
+            //     if (operation.Contains(fragmentName))
+            //     {
+            //         var fragment = ExtractFragment(grapQlfileContent, fragmentMatch);
+            //         operation += "\n\n" + fragment;
+            //     }
+            // }
+
+            return operation;
+        }
+
+        private static string ExtractFragment(string grapQlfileContent, Match fragmentMatch)
+        {
+            int nbBrackets;
+            int fragmentStartIndex = fragmentMatch.Index;
+            int fragmentEndIndex = fragmentStartIndex;
+            nbBrackets = 0; // Reset bracket count for fragments
+
+            for (int i = fragmentStartIndex; i < grapQlfileContent.Length; i++)
+            {
+                if (grapQlfileContent[i] == '{')
                 {
-                    int fragmentStartIndex = fragmentMatch.Index;
-                    int fragmentEndIndex = fragmentStartIndex;
-                    nbBrackets = 0; // Reset bracket count for fragments
-
-                    for (int i = fragmentStartIndex; i < grapQlfileContent.Length; i++)
+                    nbBrackets++;
+                }
+                else if (grapQlfileContent[i] == '}')
+                {
+                    nbBrackets--;
+                    if (nbBrackets == 0)
                     {
-                        if (grapQlfileContent[i] == '{')
-                        {
-                            nbBrackets++;
-                        }
-                        else if (grapQlfileContent[i] == '}')
-                        {
-                            nbBrackets--;
-                            if (nbBrackets == 0)
-                            {
-                                fragmentEndIndex = i;
-                                break;
-                            }
-                        }
+                        fragmentEndIndex = i;
+                        break;
                     }
-
-                    if (fragmentEndIndex <= fragmentStartIndex)
-                    {
-                        throw new InvalidOperationException("Could not find the end of the fragment.");
-                    }
-
-                    string fragment = grapQlfileContent.Substring(fragmentStartIndex, fragmentEndIndex - fragmentStartIndex + 1);
-                    operation += "\n\n" + fragment;
                 }
             }
 
-            return operation;
+            if (fragmentEndIndex <= fragmentStartIndex)
+            {
+                throw new InvalidOperationException("Could not find the end of the fragment.");
+            }
+
+            string fragment = grapQlfileContent.Substring(fragmentStartIndex, fragmentEndIndex - fragmentStartIndex + 1);
+            return fragment;
         }
     }
 

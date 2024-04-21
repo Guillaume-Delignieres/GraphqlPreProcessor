@@ -2,7 +2,7 @@
 @page "/preprocessor"
 
 <PageTitle>GraphQl Pre-Processor</PageTitle>
-<MudAlert @ref="_mudAlertBox" hidden="@_hideAlert" >@_errorMessage</MudAlert>
+<MudAlert @ref="_mudAlertBox" hidden="@_hideAlert" ><b>@_errorMessage</b></MudAlert>
 <MudText Typo="Typo.h3" GutterBottom="true">GraphQl Pre-Processor</MudText>
 <MudText Class="mb-8">Allows to select an operation from a grapql file and extract necessary fragments</MudText>
 
@@ -17,7 +17,7 @@
   </Virtualize>
 </MudSelect>
 
-<MudButton Disabled="@_preProcessIsDisabled" Variant="Variant.Filled" Color="Color.Primary" OnClick="PreProcessOnClick">Pre-Process GraphQL content</MudButton>
+@* <MudButton Disabled="@_preProcessIsDisabled" Variant="Variant.Filled" Color="Color.Primary" OnClick="PreProcessOnClick">Pre-Process GraphQL content</MudButton> *@
 
 <MudTextField Disabled="true" @bind-Value="_processedGraphQl" T="string" Label="Pre Processed GraphQL" Variant="Variant.Outlined"  Lines="50"/>
 
@@ -78,10 +78,15 @@ fragment taskInfo on ProjetTaskGraph {
         _preProcessIsDisabled = true;
         _operations = new List<string>();
         _processedGraphQl = string.Empty;
-        ProcessGrapQlContent();
+        ExtractOperations();
     }
 
     void PreProcessOnClick()
+    {
+      PreProcessGraphQlContent();
+    }
+
+    private void PreProcessGraphQlContent()
     {
       try
       {
@@ -103,9 +108,11 @@ fragment taskInfo on ProjetTaskGraph {
     {
       _selectOperation = _operationSelect?.Value;
       _preProcessIsDisabled = false;
+      if(!string.IsNullOrWhiteSpace(_selectOperation))
+        PreProcessGraphQlContent();
     }
     
-    void ProcessGrapQlContent()
+    void ExtractOperations()
     {
       try
       {
