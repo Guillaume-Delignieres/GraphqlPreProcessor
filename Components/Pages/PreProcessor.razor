@@ -1,0 +1,122 @@
+﻿@using graphql_preprocessor.GraphQl
+@page "/preprocessor"
+
+<PageTitle>GraphQl Pre-Processor</PageTitle>
+<MudAlert @ref="_mudAlertBox" hidden="@_hideAlert" >@_errorMessage</MudAlert>
+<MudText Typo="Typo.h3" GutterBottom="true">GraphQl Pre-Processor</MudText>
+<MudText Class="mb-8">Allows to select an operation from a grapql file and extract necessary fragments</MudText>
+
+<MudTextField T="string" Label="GraphQL content" Variant="Variant.Outlined"  Lines="50" @bind-Value="_graphQlContent"/>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ParseOnClick">Parse GraphQL content</MudButton>
+
+<MudText Typo="Typo.h6">Select an Operation to get extract the related GraphQL content</MudText>
+
+<MudSelect @ref="_operationSelect" T="string" ValueChanged="OnOperationSelected" >
+  <Virtualize Items="_operations" Context="operation">
+    <MudSelectItem T="string" Value="@operation">@operation</MudSelectItem>
+  </Virtualize>
+</MudSelect>
+
+<MudButton Disabled="@_preProcessIsDisabled" Variant="Variant.Filled" Color="Color.Primary" OnClick="PreProcessOnClick">Pre-Process GraphQL content</MudButton>
+
+<MudTextField Disabled="true" @bind-Value="_processedGraphQl" T="string" Label="Pre Processed GraphQL" Variant="Variant.Outlined"  Lines="50"/>
+
+
+@code {
+    private readonly GraphQlPreprocessor<ParserGraphQlValidator> _graphQlpreProcessors = new ();
+
+    MudSelect<string>? _operationSelect;
+    MudAlert? _mudAlertBox;
+    bool _hideAlert = true;
+    string? _errorMessage;
+    List<string> _operations = new();
+    string? _selectOperation;
+    bool _preProcessIsDisabled = true;
+    string _processedGraphQl = string.Empty;
+
+    string _graphQlContent = @"query testA {
+  company {
+    projects {
+      items {
+        ...projectInfos
+      }
+    }
+  }
+}
+
+query testB {
+  company {
+    tasks {
+      items {
+        ...taskInfo
+      }
+    }
+  }
+}
+
+fragment projectInfos on ProjectGraph {
+  iD
+  projectName
+  startDate
+  endDate
+  projetTasks {
+    ...taskInfo
+  }
+}
+
+fragment taskInfo on ProjetTaskGraph {
+  id
+  name
+  startDate
+}
+";
+    
+    void ParseOnClick()
+    {
+        _hideAlert = true;
+        _operationSelect?.Clear();
+        _preProcessIsDisabled = true;
+        _operations = new List<string>();
+        _processedGraphQl = string.Empty;
+        ProcessGrapQlContent();
+    }
+
+    void PreProcessOnClick()
+    {
+      try
+      {
+        _processedGraphQl = _graphQlpreProcessors.PreProcess(_graphQlContent, _selectOperation);
+      }
+      catch(Exception e)
+      {
+        if (_mudAlertBox != null)
+        {
+          _mudAlertBox.Severity = Severity.Error;
+        }
+
+        _errorMessage = e.Message;
+        _hideAlert = false;
+      }
+    }
+
+    void OnOperationSelected()
+    {
+      _selectOperation = _operationSelect?.Value;
+      _preProcessIsDisabled = false;
+    }
+    
+    void ProcessGrapQlContent()
+    {
+      try
+      {
+        _operations = _graphQlpreProcessors.ExtractOperations(_graphQlContent);
+      }
+      catch(Exception e)
+      {
+        if (_mudAlertBox != null) _mudAlertBox.Severity = Severity.Error;
+        _errorMessage = e.Message;
+        _hideAlert = false;
+      }
+    }
+    
+}

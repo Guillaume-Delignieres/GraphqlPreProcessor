@@ -1,0 +1,8 @@
+﻿services:
+  graphqlpreprocessor:
+    image: graphqlpreprocessor:1.0
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"

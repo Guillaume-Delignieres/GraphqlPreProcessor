@@ -1,0 +1,22 @@
+# This is a generated file. Not intended for manual editing.
+services:
+  graphqlpreprocessor:
+    build:
+      context: "C:\\Users\\guill\\dev\\GraphqlPreprocessor"
+      dockerfile: "Dockerfile"
+      target: "base"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net8.0/GraphqlPreprocessor.dll"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_STATICWEBASSETS: "/app/bin/Debug/net8.0/GraphqlPreprocessor.staticwebassets.runtime.CT.json"
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    image: "graphqlpreprocessor:dev"
+    ports: []
+    volumes:
+    - "C:\\Users\\guill\\.nuget\\packages:/home/app/.nuget/packages"
+    - "C:\\Users\\guill\\dev\\GraphqlPreprocessor:/app:rw"
+    - "C:\\Users\\guill\\dev\\GraphqlPreprocessor:/src:rw"
+    working_dir: "/app"
